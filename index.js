@@ -4,40 +4,20 @@ module.exports = function(audioContext, opts) {
 
     // configuration
     var bufferSize      = opts.bufferSize || 4096,
-        channelCount    = opts.channelCount || 2,
-        sampleRate      = opts.sampleRate || null,
-        duration        = opts.duration || null,
-        length          = opts.length || null;
+        channelCount    = opts.channelCount || 2;
 
     // output state
-    var outputLength    = null,
-        outputBuffer    = null,
-        offset          = 0;
+    var outputBuffer    = opts.buffer || null,
+        outputLength,
+        offset;
 
-    function createOutputBuffer() {
-
-        if (!sampleRate) {
-            throw new Error("can't create output buffer - sample rate is unknown");
+    function reset() {
+        if (outputBuffer) {
+            outputLength = outputBuffer.length;
+        } else {
+            outputLength = null
         }
-
-        if (duration) {
-            outputLength = Math.floor(sampleRate * duration);
-            outputBuffer = audioContext.createBuffer(channelCount, outputLength, sampleRate);
-            return;
-        }
-
-        if (length) {
-            outputLength = length;
-            outputBuffer = audioContext.createBuffer(channelCount, outputLength, sampleRate);
-            return;
-        }
-
-        throw new Error("can't create output buffer - either duration or length is required");
-
-    }
-
-    if (sampleRate) {
-        createOutputBuffer();
+        offset = 0;
     }
 
     var processor = audioContext.createScriptProcessor(bufferSize, channelCount, channelCount);
@@ -51,21 +31,13 @@ module.exports = function(audioContext, opts) {
 
     processor.onaudioprocess = function(evt) {
 
-        if (offset >= outputLength) {
+        if (offset >= outputLength || !outputBuffer) {
             return;
         }
 
-        var inputBuffer = evt.inputBuffer,
-            inputLength = inputBuffer.length;
-
-        if (outputBuffer === null) {
-            if (sampleRate === null) {
-                sampleRate = inputBuffer.sampleRate;
-                createOutputBuffer();
-            }
-        }
-
-        var samplesRemaining = outputLength - offset;
+        var inputBuffer         = evt.inputBuffer,
+            inputLength         = inputBuffer.length,
+            samplesRemaining    = outputLength - offset;
 
         if (inputLength > samplesRemaining) {
             for (var i = 0; i < channelCount; ++i) {
@@ -87,18 +59,17 @@ module.exports = function(audioContext, opts) {
 
     }
 
-    processor.getOutputBuffer = function() {
-        return outputBuffer;
-    }
-
-    processor.reset = function() {
-        offset = 0;
-        if (sampleRate) {
-            createOutputBuffer();
-        } else {
-            outputBuffer = null;
+    Object.defineProperty(processor, 'buffer', {
+        get: function() { return outputBuffer; },
+        set: function(b) {
+            outputBuffer = b;
+            reset();
         }
-    }
+    });
+
+    processor.reset = reset;
+
+    reset();
 
     return processor;
 
