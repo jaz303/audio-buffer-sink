@@ -1,6 +1,6 @@
 {
   "name": "audio-buffer-sink",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A web audio sink node that writes received data to an AudioBuffer",
   "main": "index.js",
   "scripts": {
