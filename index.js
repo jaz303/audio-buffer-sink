@@ -7,7 +7,7 @@ module.exports = function(audioContext, opts) {
         channelCount    = opts.channelCount || 2;
 
     // output state
-    var outputBuffer    = opts.buffer || null,
+    var outputBuffer    = opts.outputBuffer || null,
         outputLength,
         offset;
 
@@ -59,7 +59,7 @@ module.exports = function(audioContext, opts) {
 
     }
 
-    Object.defineProperty(processor, 'buffer', {
+    Object.defineProperty(processor, 'outputBuffer', {
         get: function() { return outputBuffer; },
         set: function(b) {
             outputBuffer = b;
